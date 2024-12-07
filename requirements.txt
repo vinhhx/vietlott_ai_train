@@ -1,0 +1,8 @@
+selenium
+python-dotenv
+setuptools
+pandas
+undetected-chromedriver
+requests
+scikit-learn 
+numpy

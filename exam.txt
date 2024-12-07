@@ -1,0 +1,5 @@
+https://github.com/zepen/predict_Lottery_ticket/blob/master/run_train_model.py
+
+https://github.com/CorvusCodex/LotteryAi/blob/main/LotteryAi.py
+
+https://github.com/classicrocker883/LotteryAI/blob/main/generate_numbers.py
