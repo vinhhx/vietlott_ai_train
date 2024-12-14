@@ -25,6 +25,8 @@ class LstmWithCRFModel(object):
             hidden_size,
             layer_size
     ):
+        print('====================')
+        print(batch_size)
         self._inputs= tf.keras.layers.InputLayer(
             shape=(w_size, ball_num),
             batch_size=batch_size,

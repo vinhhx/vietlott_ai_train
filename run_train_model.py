@@ -56,6 +56,7 @@ def create_train_test_data(name,windows,train_test_split):
     path="{}{}".format(name_path[name]["path"],data_file_name)
     data = pd.read_csv(path)
     logger.info("read data from path: {}".format(path))
+    
     train_data =create_data(data.iloc[:int(len(data)*train_test_split)],name,windows)
     test_data = create_data(data.iloc[int(len(data) * train_test_split):],name,windows)
     logger.info(
