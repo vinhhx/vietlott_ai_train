@@ -31,7 +31,7 @@ def create_data(data, name, windows):
 
         logger.info("Training data loaded!")
     
-    data = data.iloc[:,6:].values
+    data = data.iloc[:, 2:].values
     logger.info("Training set data dimensions: {}".format(data.shape))
     x_data, y_data = [], []
     for i in range(len(data) - windows -1):
@@ -73,6 +73,7 @@ def train_with_eval_red_ball_model(
 ):
     """Red ball model training and evaluation"""
     m_args = model_args[name]
+    print(x_train)
     x_train = x_train - 1
     y_train = y_train - 1
     train_data_len = x_train.shape[0]
@@ -127,13 +128,13 @@ def train_with_eval_red_ball_model(
                     logger.info("epoch: {}, loss: {}, tag: {}, pred: {}".format(
                         epoch, loss_, y_train[i:(i+1), :][0] + 1, pred[0] + 1)
                     )
-        logger.info("训练耗时: {}".format(time.time() - start_time))
+        logger.info("Training time: {}".format(time.time() - start_time))
         pred_key[ball_name[0][0]] = red_ball_model.pred_sequence.name
         if not os.path.exists(m_args["path"]["red"]):
             os.makedirs(m_args["path"]["red"])
         saver = tf.compat.v1.train.Saver()
         saver.save(sess, "{}{}.{}".format(m_args["path"]["red"], red_ball_model_name, extension))
-        logger.info("模型评估【{}】...".format(name_path[name]["name"]))
+        logger.info("Model Evaluation【{}】...".format(name_path[name]["name"]))
         eval_d = {}
         all_true_count = 0
         for j in range(test_data_len):
@@ -149,14 +150,146 @@ def train_with_eval_red_ball_model(
                 eval_d[count] += 1
             else:
                 eval_d[count] = 1
-        logger.info("测试期数: {}".format(test_data_len))
+        logger.info("Number of test sessions: {}".format(test_data_len))
         for k, v in eval_d.items():
-            logger.info("命中{}个球，{}期，占比: {}%".format(k, v, round(v * 100 / test_data_len, 2)))
+            logger.info("Hit{} Balls，{}periods，percentage: {}%".format(k, v, round(v * 100 / test_data_len, 2)))
         logger.info(
-            "整体准确率: {}%".format(
+            "Overall accuracy: {}%".format(
                 round(all_true_count * 100 / (test_data_len * sequence_len), 2)
             )
         )
+
+def train_with_eval_blue_ball_model(
+        name,
+        x_train,
+        y_train,
+        x_test,
+        y_test
+):
+    """ Basketball model training and evaluation """
+    m_args = model_args[name]
+    x_train = x_train - 1 
+    train_data_len = x_train.shape[0]
+    if name == 'ssq':
+        x_train = x_train.reshape(len(x_train),m_args["model_args"]["windows_size"])
+        y_train = tf.keras.utils.to_categorical(y_train - 1, num_classes=m_args["model_args"]["blue_n_class"])
+    else:
+        y_train = y_train - 1
+    logger.info("Training feature data dimensions: {}".format(x_train.shape))
+    logger.info("Training label data dimensions: {}".format(y_train.shape))  
+
+    x_test = x_test - 1
+    test_data_len = x_test.shape[0]
+    if name == "ssq":
+        x_test = x_test.reshape(len(x_test), m_args["model_args"]["windows_size"])
+        y_test = tf.keras.utils.to_categorical(y_test - 1, num_classes=m_args["model_args"]["blue_n_class"])
+    else:
+        y_test = y_test - 1
+    logger.info("Training feature data dimensions: {}".format(x_test.shape))
+    logger.info("Training label data dimensions: {}".format(y_test.shape))
+
+    start_time = time.time()
+
+    with tf.compat.v1.Session() as sess:
+        if name == "ssq":
+            blue_ball_model = SignalLstmModel(
+                batch_size=m_args["model_args"]["batch_size"],
+                n_class=m_args["model_args"]["blue_n_class"],
+                w_size=m_args["model_args"]["windows_size"],
+                embedding_size=m_args["model_args"]["blue_embedding_size"],
+                hidden_size=m_args["model_args"]["blue_hidden_size"],
+                outputs_size=m_args["model_args"]["blue_n_class"],
+                layer_size=m_args["model_args"]["blue_layer_size"]
+            )
+        else:
+            blue_ball_model = LstmWithCRFModel(
+                batch_size=m_args["model_args"]["batch_size"],
+                n_class=m_args["model_args"]["blue_n_class"],
+                ball_num=m_args["model_args"]["blue_sequence_len"],
+                w_size=m_args["model_args"]["windows_size"],
+                embedding_size=m_args["model_args"]["blue_embedding_size"],
+                words_size=m_args["model_args"]["blue_n_class"],
+                hidden_size=m_args["model_args"]["blue_hidden_size"],
+                layer_size=m_args["model_args"]["blue_layer_size"]
+            )
+        train_step = tf.compat.v1.train.AdamOptimizer(
+            learning_rate=m_args["train_args"]["blue_learning_rate"],
+            beta1=m_args["train_args"]["blue_beta1"],
+            beta2=m_args["train_args"]["blue_beta2"],
+            epsilon=m_args["train_args"]["blue_epsilon"],
+            use_locking=False,
+            name='Adam'
+        ).minimize(blue_ball_model.loss)
+        sess.run(tf.compat.v1.global_variables_initializer())
+        sequence_len = "" if name == "ssq" else m_args["model_args"]["blue_sequence_len"]
+        for epoch in range(m_args["model_args"]["blue_epochs"]):
+            for i in range(train_data_len):
+                if name == "ssq":
+                    _, loss_, pred = sess.run([
+                        train_step, blue_ball_model.loss, blue_ball_model.pred_label
+                    ], feed_dict={
+                        "inputs:0": x_train[i:(i+1), :],
+                        "tag_indices:0": y_train[i:(i+1), :],
+                    })
+                    if i % 100 == 0:
+                        logger.info("epoch: {}, loss: {}, tag: {}, pred: {}".format(
+                            epoch, loss_, np.argmax(y_train[i:(i+1), :][0]) + 1, pred[0] + 1)
+                        )
+                else:
+                    _, loss_, pred = sess.run([
+                        train_step, blue_ball_model.loss, blue_ball_model.pred_sequence
+                    ], feed_dict={
+                        "inputs:0": x_train[i:(i + 1), :, :],
+                        "tag_indices:0": y_train[i:(i + 1), :],
+                        "sequence_length:0": np.array([sequence_len] * 1)
+                    })
+                    if i % 100 == 0:
+                        logger.info("epoch: {}, loss: {}, tag: {}, pred: {}".format(
+                            epoch, loss_, y_train[i:(i + 1), :][0] + 1, pred[0] + 1)
+                        )
+        logger.info("Training time: {}".format(time.time() - start_time))
+        pred_key[ball_name[1][0]] = blue_ball_model.pred_label.name if name == "ssq" else blue_ball_model.pred_sequence.name
+        if not os.path.exists(m_args["path"]["blue"]):
+            os.mkdir(m_args["path"]["blue"])
+        saver = tf.compat.v1.train.Saver()
+        saver.save(sess, "{}{}.{}".format(m_args["path"]["blue"], blue_ball_model_name, extension))
+        logger.info("Model Evaluation【{}】...".format(name_path[name]["name"]))
+        eval_d = {}
+        all_true_count = 0
+        for j in range(test_data_len):
+            if name == "ssq":
+                true = y_test[j:(j + 1), :]
+                pred = sess.run(blue_ball_model.pred_label
+                , feed_dict={"inputs:0": x_test[j:(j + 1), :]})
+            else:
+                true = y_test[j:(j + 1), :]
+                pred = sess.run(blue_ball_model.pred_sequence
+                , feed_dict={
+                    "inputs:0": x_test[j:(j + 1), :, :],
+                    "sequence_length:0": np.array([sequence_len] * 1)
+                })
+            count = np.sum(true == pred + 1)
+            all_true_count += count
+            if count in eval_d:
+                eval_d[count] += 1
+            else:
+                eval_d[count] = 1
+        logger.info("Number of test sessions: {}".format(test_data_len))
+        for k, v in eval_d.items():
+            logger.info("Hit {} balls，{} periods, percentage: {}%".format(k, v, round(v * 100 / test_data_len, 2)))
+        if name == "ssq":
+            logger.info(
+                "Overall accuracy: {}%".format(
+                    round(all_true_count * 100 / test_data_len, 2)
+                )
+            )
+        else:
+            logger.info(
+                "Overall accuracy: {}%".format(
+                    round(all_true_count * 100 / (test_data_len * sequence_len), 2)
+                )
+            )
+
 
 def run(name,train_test_split):
     """ 
@@ -173,12 +306,26 @@ def run(name,train_test_split):
         train_test_split
     )
     logger.info("Start training【{}】red ball model...".format(name_path[name]["name"]))
-
     train_with_eval_red_ball_model(
         name,
         x_train=train_data["red"]["x_data"], y_train=train_data["red"]["y_data"],
         x_test=test_data["red"]["x_data"], y_test=test_data["red"]["y_data"],
     )
+
+    tf.compat.v1.reset_default_graph() #Reset Network Map
+
+    logger.info("Start training 【{}】the basketball model...".format(name_path[name]["name"]))
+
+    train_with_eval_blue_ball_model(
+        name,
+        x_train=train_data["blue"]["x_data"], y_train=train_data["blue"]["y_data"],
+        x_test=test_data["blue"]["x_data"], y_test=test_data["blue"]["y_data"]
+    )
+
+    # Save the predicted key node names
+
+    with open("{}/{}/{}".format(model_path, name, pred_key_name), "w") as f:
+        json.dump(pred_key, f)
 
 if __name__ == "__main__":
     if not args.name:

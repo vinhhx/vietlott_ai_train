@@ -25,9 +25,7 @@ class LstmWithCRFModel(object):
             hidden_size,
             layer_size
     ):
-        print('====================')
-        print(batch_size)
-        self._inputs= tf.keras.layers.InputLayer(
+        self._inputs= tf.keras.layers.Input(
             shape=(w_size, ball_num),
             batch_size=batch_size,
             name="inputs"
@@ -46,10 +44,10 @@ class LstmWithCRFModel(object):
         )
 
         # Xây dựng trích xuất tính năng
-        embedding= tf.keras.layers.Embedding(
-            words_size,
-            embedding_size
-        )(self._inputs)
+        embedding = tf.keras.layers.Embedding(words_size, embedding_size)(self._inputs)
+        print('========== Embedding ==============')
+        print(embedding)
+        print('========== End Embedding ==============')
 
         first_lstm = tf.convert_to_tensor(
             [tf.keras.layers.LSTM(hidden_size)(embedding[:,:,i,:]) for i in range(ball_num)]

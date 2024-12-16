@@ -52,10 +52,12 @@ class VietLottScrapper:
         return False
     
     def run(self):
-        self.crawler645()
-        logger.info("Crawler data Mega 6-45")
+        # self.crawler645()
+        # logger.info("Crawler data Mega 6-45")
 
         self.crawler655()
+        
+        # logger.info("Crawler data Mega 6-45")
     
     def crawler645(self):
         date_from= '17-11-2019'
@@ -72,7 +74,7 @@ class VietLottScrapper:
         driver.get(url)
         driver.switch_to.window(driver.window_handles[0])
         results=[
-            ["Day","Type","Money","Date","Month","Year","Num1","Num2","Num3","Num4","Num5","NumS"]
+            ["STT","Day","Num1","Num2","Num3","Num4","Num5","NumS"]
         ]
         try:
             pageData= WebDriverWait(driver,30).until(
@@ -83,6 +85,7 @@ class VietLottScrapper:
                     ),
                 )
             )
+            start = 0
             for row in pageData:
                 day,datestr =row.find_element(By.XPATH,'.//td[1]').text.split(',')
                 date,month,year = datestr.split('/')
@@ -90,19 +93,16 @@ class VietLottScrapper:
                 value=row.find_element(By.XPATH,'.//td[3]').text.replace(',','.')
 
                 results.append([
-                   day,
-                   "Mega",
-                   str(value),
-                   int(date),
-                   int(month),
-                   int(year),
-                   int(num1.text),
-                   int(num2.text),
-                   int(num3.text),
-                   int(num4.text),
-                   int(num5.text),
-                   int(nums.text),
+                    start,    
+                    f"{day}-{int(date)}{int(month)}{int(year)}",
+                    int(num1.text),
+                    int(num2.text),
+                    int(num3.text),
+                    int(num4.text),
+                    int(num5.text),
+                    int(nums.text),
                 ])
+                start += 1
             if len(results):
                 self.setToCsvFile(results,type="Mega")
 
@@ -130,7 +130,7 @@ class VietLottScrapper:
         driver.get(url)
         driver.switch_to.window(driver.window_handles[0])
         results=[
-            ["Day","Type","Money","Date","Month","Year","Num1","Num2","Num3","Num4","Num5","Num6","NumS"]
+            ["STT","Day","Num1","Num2","Num3","Num4","Num5","Num6","NumS"]
         ]
         try:
             pageData= WebDriverWait(driver,60).until(
@@ -141,6 +141,7 @@ class VietLottScrapper:
                     ),
                 )
             )
+            start = 0
             for row in pageData:
                 day,datestr =row.find_element(By.XPATH,'.//td[1]').text.split(',')
                 date,month,year = datestr.split('/')
@@ -148,20 +149,17 @@ class VietLottScrapper:
                 value=row.find_element(By.XPATH,'.//td[3]').text.replace(',','.')
 
                 results.append([
-                   day,
-                   "Power",
-                   str(value),
-                   int(date),
-                   int(month),
-                   int(year),
-                   int(num1.text),
-                   int(num2.text),
-                   int(num3.text),
-                   int(num4.text),
-                   int(num5.text),
-                   int(num6.text),
-                   int(nums.text),
+                    start,    
+                    f"{day}-{int(date)}{int(month)}{int(year)}",
+                    int(num1.text),
+                    int(num2.text),
+                    int(num3.text),
+                    int(num4.text),
+                    int(num5.text),
+                    int(num6.text),
+                    int(nums.text),
                 ])
+                start +=1
             if len(results):
                 self.setToCsvFile(results,type="Power")
 
