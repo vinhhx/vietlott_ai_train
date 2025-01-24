@@ -1,0 +1,2 @@
+model_checkpoint_path: "D:\\work\\code\\python\\vietLott/model//mega/mega_ball_model.ckpt"
+all_model_checkpoint_paths: "D:\\work\\code\\python\\vietLott/model//mega/mega_ball_model.ckpt"

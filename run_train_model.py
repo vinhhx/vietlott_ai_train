@@ -39,7 +39,7 @@ def create_data(data, name, windows):
         x_data.append(sub_data[1:])
         y_data.append(sub_data[0])
 
-    cut_num =6 if name == "ssq" else 5
+    cut_num =6 if name == "ssq" else 6
     return {
         "red": {
             "x_data": np.array(x_data)[:, :, :cut_num], "y_data": np.array(y_data)[:, :cut_num]
@@ -57,10 +57,12 @@ def create_train_test_data(name,windows,train_test_split):
     data = pd.read_csv(path)
     logger.info("read data from path: {}".format(path))
     
-    train_data =create_data(data.iloc[:int(len(data)*train_test_split)],name,windows)
-    test_data = create_data(data.iloc[int(len(data) * train_test_split):],name,windows)
+    train_data =create_data(data.iloc[:int(len(data))],name,windows)
+    test_data = create_data(data.iloc[int(len(data) * train_test_split):], name, windows)
+    # test_data = create_data(data.iloc[lambda x: x.index % 3 == 0],name,windows)
     logger.info(
-        "train_data sample rate = {}, test_data sample rate = {}".format(train_test_split, round(1 - train_test_split, 2)))
+        "train_data sample total = {}, test_data sample rate = {}".format(int(len(data)),(1 - train_test_split))
+    )
     return train_data, test_data
 
 
@@ -73,7 +75,6 @@ def train_with_eval_red_ball_model(
 ):
     """Red ball model training and evaluation"""
     m_args = model_args[name]
-    print(x_train)
     x_train = x_train - 1
     y_train = y_train - 1
     train_data_len = x_train.shape[0]
@@ -305,6 +306,7 @@ def run(name,train_test_split):
         model_args[name]['model_args']['windows_size'],
         train_test_split
     )
+    print('=======TEST DATA================')
     logger.info("Start training【{}】red ball model...".format(name_path[name]["name"]))
     train_with_eval_red_ball_model(
         name,
@@ -329,7 +331,7 @@ def run(name,train_test_split):
 
 if __name__ == "__main__":
     if not args.name:
-        run_name="ssq"
+        run_name="dlt"
     else:
         run_name = args.name
 

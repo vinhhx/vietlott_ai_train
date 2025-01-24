@@ -52,15 +52,14 @@ class VietLottScrapper:
         return False
     
     def run(self):
-        # self.crawler645()
-        # logger.info("Crawler data Mega 6-45")
+        self.crawler645()
+        logger.info("Crawler data Mega 6-45")
 
         self.crawler655()
-        
-        # logger.info("Crawler data Mega 6-45")
+        logger.info("Crawler data Mega 6-45")
     
     def crawler645(self):
-        date_from= '17-11-2019'
+        date_from= '01-01-2016'
         if not self.driver:
             msg = "Please use context for the `Scrapper`"
             logger.error(msg)
@@ -116,7 +115,7 @@ class VietLottScrapper:
 
 
     def crawler655(self):
-        date_from= '17-11-2019'
+        date_from= '01-01-2016'
         if not self.driver:
             msg = "Please use context for the `Scrapper`"
             logger.error(msg)

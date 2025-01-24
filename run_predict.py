@@ -83,6 +83,7 @@ def try_error(mode, name, predict_features, windows_size):
     if mode:
         return predict_features
     else:
+      
         if len(predict_features) != windows_size:
             logger.warning("The issue number has skipped, and the issue number is not continuous! Start looking for the last issue number! The prediction time for this issue is relatively long")
             last_current_year = (get_year() - 1) * 1000
@@ -99,10 +100,14 @@ def try_error(mode, name, predict_features, windows_size):
 def get_red_ball_predict_result(red_graph, red_sess, pred_key_d, predict_features, sequence_len, windows_size):
     """ Nhận kết quả dự đoán bóng đỏ
     """
+
     name_list = [(ball_name[0], i + 1) for i in range(sequence_len)]
     data = predict_features[["{}_{}".format(name[0], i) for name, i in name_list]].values.astype(int) - 1
+   
     with red_graph.as_default():
+       
         reverse_sequence = tf.compat.v1.get_default_graph().get_tensor_by_name(pred_key_d[ball_name[0][0]])
+        print(reverse_sequence)
         pred = red_sess.run(reverse_sequence, feed_dict={
             "inputs:0": data.reshape(1, windows_size, sequence_len),
             "sequence_length:0": np.array([sequence_len] * 1)
@@ -137,6 +142,7 @@ def get_final_result(red_graph, red_sess, blue_graph, blue_sess, pred_key_d, nam
     """
     m_args = model_args[name]["model_args"]
     if name == "ssq":
+      
         red_pred, red_name_list = get_red_ball_predict_result(
             red_graph, red_sess, pred_key_d,
             predict_features, m_args["sequence_len"], m_args["windows_size"]
@@ -155,6 +161,8 @@ def get_final_result(red_graph, red_sess, blue_graph, blue_sess, pred_key_d, nam
             red_graph, red_sess, pred_key_d,
             predict_features, m_args["red_sequence_len"], m_args["windows_size"]
         )
+       
+       
         blue_pred, blue_name_list = get_blue_ball_predict_result(
             blue_graph, blue_sess, pred_key_d,
             name, predict_features, m_args["blue_sequence_len"], m_args["windows_size"]
@@ -171,8 +179,10 @@ def run(name):
         red_graph, red_sess, blue_graph, blue_sess, pred_key_d, current_number = load_model(name)
         windows_size = model_args[name]["model_args"]["windows_size"]
         data = spider(name, 1, current_number, "predict")
+
         logger.info("【{}】Số kỳ dự báo：{}".format(name_path[name]["name"], int(current_number) + 1))
         predict_features_ = try_error(1, name, data.iloc[:windows_size], windows_size)
+     
         logger.info("Kết quả dự đoán：{}".format(get_final_result(
             red_graph, red_sess, blue_graph, blue_sess, pred_key_d, name, predict_features_))
         )
@@ -182,7 +192,7 @@ def run(name):
 
 if __name__ == '__main__':
     if not args.name:
-        run_name="ssq"
+        run_name="dlt"
     else:
         run_name = args.name
     run(run_name)
